@@ -183,7 +183,7 @@ body{background:var(--bg);min-height:100vh;font-family:'Inter',sans-serif;paddin
       <div class="twitch-info" id="twitch-info">Підключи Twitch щоб отримувати треки через Channel Points.</div>
       <div class="reward-setup" id="reward-setup" style="display:none">
         <div class="reward-label">назва нагороди (точна, як на Twitch)</div>
-        <input class="reward-input" id="reward-name-input" type="text" placeholder="🎵 Замов трек" value="🎵 Замов трек">
+        <input class="reward-input" id="reward-name-input" type="text" placeholder="🎵 Замов трек" value="🎵 Замов трек" oninput="saveRewardName()">
         <div class="reward-hint">⚠️ Має співпадати з назвою нагороди в Twitch Channel Points</div>
       </div>
       <div class="log-box" id="twitch-log"></div>
@@ -320,6 +320,7 @@ onAuthStateChanged(auth, async (user) => {
   initQueue();
   loadColors();
   loadWidgetTheme();
+  loadRewardName();
 });
 
 window.doLogout = async function() {
@@ -483,6 +484,10 @@ setTimeout(()=>{
   else if(t) { const unsub=onAuthStateChanged(auth,u=>{if(u){unsub();initTwitchEventSub(t);}}); }
 },500);
 
+
+window.saveRewardName=function(){set(ref(db, `users/${uid}/settings/rewardName`),document.getElementById('reward-name-input').value);};
+function loadRewardName(){onValue(ref(db, `users/${uid}/settings/rewardName`),(s)=>{if(s.exists())document.getElementById('reward-name-input').value=s.val();});}
+
 // ── QUEUE ─────────────────────────────────────────────────────────
 function initQueue(){
   onValue(qRef(),(snapshot)=>{
@@ -551,9 +556,9 @@ window.applyPreset=function(name){document.querySelectorAll('.preset-btn:not([id
 window.liveColor=(cssVar,val)=>document.documentElement.style.setProperty(cssVar,val);
 window.syncHex=function(colorInput){const hexEl=document.getElementById('h-'+colorInput.id.slice(2));if(hexEl)hexEl.value=colorInput.value;};
 window.hexInput=function(cssVar,colorId,hexInput){const val=hexInput.value.trim();if(/^#[0-9a-fA-F]{6}$/.test(val)){document.getElementById(colorId).value=val;liveColor(cssVar,val);}};
-window.saveColors=function(){const saved={};COLOR_FIELDS.forEach(f=>{const v=document.getElementById(f.id)?.value;if(v)saved[f.css]=v;});localStorage.setItem('dj_colors_'+uid,JSON.stringify(saved));const btn=document.querySelector('#tab-settings .settings-save');btn.textContent='✓ Збережено!';setTimeout(()=>btn.textContent='💾 Зберегти',1500);};
-window.resetColors=function(){localStorage.removeItem('dj_colors_'+uid);applyPreset('red');};
-function loadColors(){const saved=localStorage.getItem('dj_colors_'+uid);if(saved){try{const vars=JSON.parse(saved);applyVars(vars);syncPickersFromVars(vars);}catch{}}}
+window.saveColors=function(){const saved={};COLOR_FIELDS.forEach(f=>{const v=document.getElementById(f.id)?.value;if(v)saved[f.css]=v;});set(ref(db, `users/${uid}/panel_theme`), saved);const btn=document.querySelector('#tab-settings .settings-save');btn.textContent='✓ Збережено!';setTimeout(()=>btn.textContent='💾 Зберегти',1500);};
+window.resetColors=function(){remove(ref(db, `users/${uid}/panel_theme`));applyPreset('red');};
+function loadColors(){onValue(ref(db, `users/${uid}/panel_theme`),(snap)=>{if(snap.exists()){const vars=snap.val();applyVars(vars);syncPickersFromVars(vars);}});}
 
 // ── WIDGET THEME ──────────────────────────────────────────────────
 const WIDGET_PRESETS={

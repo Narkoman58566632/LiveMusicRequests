@@ -54,16 +54,23 @@ body{background:var(--bg);min-height:100vh;font-family:'Inter',sans-serif;paddin
 .btn-approve:hover{background:#245024;}
 .btn-reject{background:var(--red-btn);color:var(--red-btn-text);border:1px solid var(--border2);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;transition:background 0.2s;}
 .btn-reject:hover{background:#501515;}
-.queue-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #2d0a0a;}
+
+/* ПОКРАЩЕНІ СТИЛІ ДЛЯ АКТИВНОЇ ПІСНІ */
+.queue-item{display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid #2d0a0a;border-radius:8px;transition: background 0.2s;}
+.queue-item.playing-now {background: #3d0a0a; border: 1px solid var(--accent2); margin-bottom: 4px;}
 .queue-item:last-child{border-bottom:none;}
-.q-num{font-size:11px;color:#5a2020;min-width:20px;font-family:'Unbounded',sans-serif;}
+.q-num{font-size:11px;color:#5a2020;min-width:20px;font-family:'Unbounded',sans-serif; text-align: center;}
 .q-info{flex:1;min-width:0;}
-.q-name{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.q-name{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; font-weight: 500;}
+.queue-item.playing-now .q-name {color: #fff;}
 .q-from{font-size:11px;color:#6a2a2a;margin-top:2px;}
-.now-pill{background:#4a000033;border:1px solid #e0303066;border-radius:99px;font-size:9px;color:#ff6060;padding:3px 9px;white-space:nowrap;font-family:'Unbounded',sans-serif;}
+.queue-item.playing-now .q-from {color: var(--text);}
+.now-pill{background:var(--accent);color:#000;border-radius:99px;font-size:9px;padding:3px 9px;white-space:nowrap;font-family:'Unbounded',sans-serif;font-weight:700; animation: pulse 1.5s infinite;}
 .twitch-pill{background:#6441a533;border:1px solid #6441a566;border-radius:99px;font-size:9px;color:#b09fe0;padding:3px 9px;white-space:nowrap;font-family:'Unbounded',sans-serif;margin-left:4px;}
 .btn-del{background:#2a0a0a;color:#c06060;border:1px solid var(--border2);border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;flex-shrink:0;}
+.btn-del:hover {background: var(--accent2); color: #fff;}
 .empty{font-size:13px;color:#4a1a1a;padding:12px 0;text-align:center;}
+
 .music-controls{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
 .music-btn{background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:12px;padding:14px 10px;font-size:11px;cursor:pointer;font-family:'Unbounded',sans-serif;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;line-height:1.3;}
 .music-btn:hover{background:var(--border);border-color:var(--accent2);}
@@ -91,7 +98,6 @@ body{background:var(--bg);min-height:100vh;font-family:'Inter',sans-serif;paddin
 .settings-reset{background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:10px;padding:12px 24px;font-size:13px;font-family:'Unbounded',sans-serif;cursor:pointer;margin-top:16px;margin-left:8px;transition:all 0.2s;}
 .settings-reset:hover{color:var(--text);border-color:var(--text2);}
 .num-input{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px;color:var(--text3);font-size:13px;width:80px;outline:none;}
-/* OBS link modal */
 .modal-bg{display:none;position:fixed;inset:0;background:#00000099;z-index:200;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
 .modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:420px;width:90%;}
@@ -105,9 +111,8 @@ body{background:var(--bg);min-height:100vh;font-family:'Inter',sans-serif;paddin
 .loading-screen .logo{font-family:'Unbounded',sans-serif;font-size:24px;color:#fff;}
 .loading-screen .logo span{color:#6441a5;}
 .loading-screen p{font-size:12px;color:#555;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
 
-/* СТИЛІ ДЛЯ ПЕРЕМИКАЧА МОВ */
 .lang-select-panel {background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:6px;border-radius:8px;font-size:11px;outline:none;cursor:pointer;}
 </style>
 </head>
@@ -196,7 +201,7 @@ body{background:var(--bg);min-height:100vh;font-family:'Inter',sans-serif;paddin
 
   <div class="tab-content" id="tab-settings">
     <div class="section">
-      <div class="section-title" id="txt-sec-theme">тема панелі</div>
+      <div class="section-title" id="txt-sec-theme">тема панели</div>
       <div class="theme-presets">
         <div class="preset-btn active" id="preset-red"    style="background:linear-gradient(135deg,#1a0000,#c0392b)" onclick="applyPreset('red')"></div>
         <div class="preset-btn"        id="preset-dark"   style="background:linear-gradient(135deg,#0a0a0a,#2a2a2a)" onclick="applyPreset('dark')"></div>
@@ -270,7 +275,6 @@ let allItems = [];
 let twitchToken = null, twitchUserId = null, twitchUserLogin = null;
 let eventSubWs = null, wsSessionId = null, reconnectTimer = null;
 
-// ЛОКАЛІЗАЦІЯ ПАНЕЛІ
 const translations = {
   uk: {
     title: "StreamDJ — панель",
@@ -294,28 +298,25 @@ const translations = {
     no_requests: "запитів немає",
     queue_empty: "черга порожня",
     from: "від",
-    playing_pill: "грає",
+    playing_pill: "ЗАРАЗ ГРАЄ",
     points_pill: "🟣 points",
     confirm_clear: "Очистити всю чергу?",
     confirm_reject_all: "Відхилити всі?",
-    // Twitch Tab
     tw_disconnected: "не підключено",
     tw_connecting: "підключення...",
     tw_connected: "підключено",
-    tw_btn_connect: "Підключити Twitch",
+    tw_btn_connect: "Подключить Twitch",
     tw_btn_disconnect: "Відключити",
     tw_info_disc: "Підключи Twitch щоб отримувати треки через Channel Points.",
     tw_info_conn: "Підключено як {user}. Слухаю Channel Points...",
     reward_label: "назва нагороди (точна, як на Twitch)",
     reward_hint: "⚠️ Має співпадати з назвою нагороди в Twitch Channel Points",
-    // Settings Tab
     sec_theme: "тема панелі",
     lbl_bg: "Фон сторінки", lbl_bg2: "Фон блоків", lbl_accent: "Акцент", lbl_borders: "Рамки", lbl_text: "Текст", lbl_text2: "Текст другорядний",
     btn_save: "💾 Зберегти", btn_saved: "✓ Збережено!", btn_reset: "↺ Скинути",
     sec_widget: "🎬 вигляд віджету в obs",
-    w_bg: "Фон віджету", w_border: "Колір рамки", w_title: "Назва треку", w_from: "Колір \"від ...\"", w_label: "Колір \"грає\"", w_pill: "Черга (пілюлі)", w_size: "Розмір тексту (px)", w_speed: "Швидкість прокрутки (сек)",
+    w_bg: "Фон віджету", w_border: "Колір рамки", w_title: "Назва треку", w_from: "Колір \"від ...\"", w_label: "Колір \"грає\"", w_pill: "Черга (пілюлі)", w_size: "Розмір текста (px)", w_speed: "Швидкість прокрутки (сек)",
     btn_apply_obs: "🎬 Застосувати до OBS", btn_applied_obs: "✓ Застосовано!",
-    // Modal & Logs
     modal_title: "🎬 Посилання для OBS", modal_desc: "Додай як Browser Source в OBS. Розмір: 480×120px", modal_copy: "📋 Копіювати", modal_copied: "✓ Скопійовано!", modal_close: "Закрити",
     log_auth: "✓ Авторизовано як ", log_ws_open: "WebSocket відкрито", log_ws_err: "WS помилка", log_ws_close: "WS закрито, повтор через 10с...",
     log_sub_ok: "✓ Підписка активна!", log_sub_err: "Помилка підписки: ", log_sub_old: "Видалено старих підписок: ", log_skip_reward: "Пропускаю (не та нагорода)", log_not_yt: "❌ Не YouTube посилання від ", log_firebase_err: "Firebase помилка: "
@@ -342,11 +343,10 @@ const translations = {
     no_requests: "no requests",
     queue_empty: "queue is empty",
     from: "by",
-    playing_pill: "playing",
+    playing_pill: "NOW PLAYING",
     points_pill: "🟣 points",
     confirm_clear: "Clear the entire queue?",
     confirm_reject_all: "Reject all pending requests?",
-    // Twitch Tab
     tw_disconnected: "disconnected",
     tw_connecting: "connecting...",
     tw_connected: "connected",
@@ -356,14 +356,12 @@ const translations = {
     tw_info_conn: "Connected as {user}. Listening to Channel Points...",
     reward_label: "reward name (exact match from Twitch)",
     reward_hint: "⚠️ Must match the reward name in Twitch Channel Points exactly",
-    // Settings Tab
     sec_theme: "panel theme",
     lbl_bg: "Page Background", lbl_bg2: "Block Background", lbl_accent: "Accent Color", lbl_borders: "Borders", lbl_text: "Text Color", lbl_text2: "Secondary Text",
     btn_save: "💾 Save", btn_saved: "✓ Saved!", btn_reset: "↺ Reset",
     sec_widget: "🎬 obs widget appearance",
     w_bg: "Widget Background", w_border: "Border Color", w_title: "Track Title", w_from: "\"By...\" Color", w_label: "\"Playing\" Color", w_pill: "Queue Pills", w_size: "Font Size (px)", w_speed: "Scroll Speed (sec)",
     btn_apply_obs: "🎬 Apply to OBS", btn_applied_obs: "✓ Applied!",
-    // Modal & Logs
     modal_title: "🎬 OBS Link", modal_desc: "Add as Browser Source in OBS. Size: 480×120px", modal_copy: "📋 Copy", modal_copied: "✓ Copied!", modal_close: "Close",
     log_auth: "✓ Authorized as ", log_ws_open: "WebSocket opened", log_ws_err: "WS error", log_ws_close: "WS closed, retrying in 10s...",
     log_sub_ok: "✓ Subscription active!", log_sub_err: "Subscription error: ", log_sub_old: "Removed old subscriptions: ", log_skip_reward: "Skipping (wrong reward)", log_not_yt: "❌ Not a YouTube link from ", log_firebase_err: "Firebase error: "
@@ -390,11 +388,10 @@ const translations = {
     no_requests: "запросов нет",
     queue_empty: "очередь пуста",
     from: "от",
-    playing_pill: "играет",
+    playing_pill: "СЕЙЧАС ИГРАЕТ",
     points_pill: "🟣 points",
     confirm_clear: "Очистить всю очередь?",
     confirm_reject_all: "Отклонить все?",
-    // Twitch Tab
     tw_disconnected: "не подключено",
     tw_connecting: "подключение...",
     tw_connected: "подключено",
@@ -404,14 +401,12 @@ const translations = {
     tw_info_conn: "Подключено как {user}. Слушаю Channel Points...",
     reward_label: "название награды (точное, как на Twitch)",
     reward_hint: "⚠️ Должно совпадать с названием награды в Twitch Channel Points",
-    // Settings Tab
     sec_theme: "тема панели",
     lbl_bg: "Фон страницы", lbl_bg2: "Фон блоков", lbl_accent: "Акцент", lbl_borders: "Рамки", lbl_text: "Текст", lbl_text2: "Текст второстепенный",
     btn_save: "💾 Сохранить", btn_saved: "✓ Сохранено!", btn_reset: "↺ Сбросить",
     sec_widget: "🎬 внешний вид виджета в obs",
     w_bg: "Фон виджета", w_border: "Цвет рамки", w_title: "Название трека", w_from: "Цвет \"от ...\"", w_label: "Цвет \"играет\"", w_pill: "Очередь (пилюли)", w_size: "Размер текста (px)", w_speed: "Скорость прокрутки (сек)",
     btn_apply_obs: "🎬 Применить в OBS", btn_applied_obs: "✓ Применено!",
-    // Modal & Logs
     modal_title: "🎬 Ссылка для OBS", modal_desc: "Добавь как Browser Source в OBS. Размер: 480×120px", modal_copy: "📋 Копировать", modal_copied: "✓ Скопировано!", modal_close: "Закрыть",
     log_auth: "✓ Авторизован как ", log_ws_open: "WebSocket открыт", log_ws_err: "WS ошибка", log_ws_close: "WS закрыт, повтор через 10с...",
     log_sub_ok: "✓ Подписка активна!", log_sub_err: "Ошибка подписки: ", log_sub_old: "Удалено старых подписок: ", log_skip_reward: "Пропускаю (не та награда)", log_not_yt: "❌ Не YouTube ссылка от ", log_firebase_err: "Firebase ошибка: "
@@ -489,12 +484,10 @@ window.changeLanguage = function(lang) {
 
 applyLanguage(currentLang);
 
-// ── REFS (dynamic per user) ───────────────────────────────────────
 function qRef()  { return ref(db, `users/${uid}/queue`); }
 function ctlRef(){ return ref(db, `users/${uid}/control`); }
 function wtRef() { return ref(db, `users/${uid}/widget_theme`); }
 
-// ── AUTH ─────────────────────────────────────────────────────────
 async function handleTwitchAuthRedirect() {
   const hash = window.location.hash;
   if (!hash.includes('access_token')) return false;
@@ -548,7 +541,6 @@ window.doLogout = async function() {
   window.location.href = './index.html';
 };
 
-// ── OBS MODAL ────────────────────────────────────────────────────
 window.openObsModal = function() {
   const base = window.location.origin + window.location.pathname.replace('panel.html','');
   const url = `${base}obs.html?u=${uid}`;
@@ -564,7 +556,6 @@ window.copyObsUrl = function() {
   setTimeout(()=>btn.textContent=translations[currentLang].modal_copy,1500);
 };
 
-// ── TWITCH EVENTSUB ───────────────────────────────────────────────
 function log(msg,type='info'){
   const box=document.getElementById('twitch-log');
   const line=document.createElement('div');
@@ -712,7 +703,7 @@ setTimeout(()=>{
 window.saveRewardName=function(){set(ref(db, `users/${uid}/settings/rewardName`),document.getElementById('reward-name-input').value);};
 function loadRewardName(){onValue(ref(db, `users/${uid}/settings/rewardName`),(s)=>{if(s.exists())document.getElementById('reward-name-input').value=s.val();});}
 
-// ── QUEUE ─────────────────────────────────────────────────────────
+// ── КЕРУВАННЯ ЧЕРГОЮ ТА СТАТУСОМ ГРАННЯ ────────────────────────────
 function initQueue(){
   onValue(qRef(),(snapshot)=>{
     const data=snapshot.val();
@@ -748,9 +739,12 @@ function render(){
   const ql=document.getElementById('queue-list');
   if(ql) {
     ql.innerHTML=approved.length===0?`<div class="empty">${t.queue_empty}</div>`:approved.map((i,index)=>`
-      <div class="queue-item">
-        ${i.status==='playing'?`<span class="now-pill">${t.playing_pill}</span>`:`<span class="q-num">${index}</span>`}
-        <div class="q-info"><div class="q-name">${i.title}${i.source==='twitch_points'?`<span class="twitch-pill">${t.points_pill}</span>`:''}</div><div class="q-from">${t.from} ${i.from}</div></div>
+      <div class="queue-item ${i.status==='playing' ? 'playing-now' : ''}">
+        ${i.status==='playing'?`<span class="now-pill">🔥 ${t.playing_pill}</span>`:`<span class="q-num">#${index+1}</span>`}
+        <div class="q-info">
+          <div class="q-name">${i.title}${i.source==='twitch_points'?`<span class="twitch-pill">${t.points_pill}</span>`:''}</div>
+          <div class="q-from">${t.from} ${i.from}</div>
+        </div>
         <button class="btn-del" onclick="reject('${i.key}')">✗</button>
       </div>`).join('');
   }
@@ -761,9 +755,15 @@ window.reject=k=>remove(ref(db,`users/${uid}/queue/${k}`));
 window.clearAll=()=>{if(!confirm(translations[currentLang].confirm_clear))return;allItems.forEach(t=>remove(ref(db,`users/${uid}/queue/${t.key}`)));};
 window.approveAll=()=>allItems.filter(t=>t.status==='pending').forEach(t=>update(ref(db,`users/${uid}/queue/${t.key}`),{status:'approved'}));
 window.rejectAll=()=>{if(!confirm(translations[currentLang].confirm_reject_all))return;allItems.filter(t=>t.status==='pending').forEach(t=>remove(ref(db,`users/${uid}/queue/${t.key}`)));};
+
+// Кнопки взаємодії з медіаплеєром
 window.stopCurrentTrack=()=>set(ctlRef(),{action:'pause',ts:Date.now()});
 window.resumeCurrentTrack=()=>set(ctlRef(),{action:'play',ts:Date.now()});
-window.skipCurrent=()=>set(ctlRef(),{action:'skip',ts:Date.now()});
+window.skipCurrent=()=>{
+  // Оскільки плеєр має перемикати треки, команда надсилається йому
+  set(ctlRef(),{action:'skip',ts:Date.now()});
+  // Якщо плеєр офлайн, ви можете самостійно видалити перший трек кнопкою "✗" поруч із ним
+};
 window.replayCurrentTrack=()=>set(ctlRef(),{action:'replay',ts:Date.now()});
 
 // ── TABS ──────────────────────────────────────────────────────────

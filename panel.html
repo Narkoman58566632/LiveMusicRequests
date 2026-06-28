@@ -207,10 +207,10 @@ body{background:var(--bg);min-height:100vh;font-family:'Inter',sans-serif;paddin
         Viewer sends a YouTube playlist link — all tracks are added to queue automatically.
       </div>
       <div class="reward-label" id="lbl-pl-reward-name">Reward name for playlist (on Twitch)</div>
-      <input class="reward-input" id="playlist-reward-name" type="text" placeholder="📂 Order playlist" value="📂 Order playlist">
+      <input class="reward-input" id="playlist-reward-name" type="text" placeholder="📂 Заказ плейлиста" value="📂 Заказ плейлиста" onchange="saveRewards()">
       <div class="reward-hint" id="lbl-pl-reward-hint">⚠️ Must match the reward name in Twitch Channel Points</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:10px;" id="lbl-max-tracks">Max tracks from one viewer playlist:</div>
-      <input type="number" class="num-input" id="max-pl-tracks" value="10" min="1" max="50" style="margin-top:6px;">
+      <div style="font-size:11px;color:var(--text2);margin-top:10px;" id="lbl-max-tracks">Max tracks from one viewer playlist:</div> <button class="settings-save" onclick="saveRewards()">💾 Сохранить настройки наград</button>
+      <input type="number" class="num-input" id="max-pl-tracks" value="10" min="1" max="50" style="margin-top:6px;" onchange="saveRewards()">
     </div>
   </div>
 
@@ -226,8 +226,9 @@ body{background:var(--bg);min-height:100vh;font-family:'Inter',sans-serif;paddin
       <div class="twitch-info" id="twitch-info">—</div>
       <div class="reward-setup" id="reward-setup" style="display:none">
         <div class="reward-label" id="lbl-track-reward">Track reward name (exact, as on Twitch)</div>
-        <input class="reward-input" id="reward-name-input" type="text" placeholder="🎵 Order track" value="🎵 Order track">
+        <input class="reward-input" id="reward-name-input" type="text" placeholder="🎵 Заказ музики" value="🎵 Заказ музики" onchange="saveRewards()">
         <div class="reward-hint" id="lbl-track-reward-hint">⚠️ Must match the reward name in Twitch Channel Points</div>
+        <button class="settings-save" onclick="saveRewards()">💾 Сохранить настройки наград</button>
       </div>
       <div class="log-box" id="twitch-log"></div>
     </div>
@@ -654,6 +655,7 @@ function ctlRef()  { return ref(db, `users/${uid}/control`); }
 function wtRef()   { return ref(db, `users/${uid}/widget_theme`); }
 function plRef()   { return ref(db, `users/${uid}/playlists`); }
 function plCfgRef(){ return ref(db, `users/${uid}/playlist_config`); }
+function rewardCfgRef(){ return ref(db, `users/${uid}/reward_config`); }
 
 // ── AUTH ─────────────────────────────────────────────────────────
 async function handleTwitchAuthRedirect() {
@@ -769,12 +771,40 @@ function initPlaylists() {
   });
 }
 
+  function initRewards() {
+  onValue(rewardCfgRef(), (snap) => {
+    const cfg = snap.val() || {};
+    if (cfg.trackReward) {
+      document.getElementById('reward-name-input').value = cfg.trackReward;
+    }
+    if (cfg.playlistReward) {
+      document.getElementById('playlist-reward-name').value = cfg.playlistReward;
+    }
+    if (cfg.maxPlTracks) {
+      document.getElementById('max-pl-tracks').value = cfg.maxPlTracks;
+    }
+  });
+}
+
 function updateModeButtons() {
   ['off','order','shuffle'].forEach(m => {
     document.getElementById('mode-'+m)?.classList.toggle('active', fallbackMode === m);
   });
 }
 
+window.saveRewards = async function() {
+  if (!uid) return;
+  const trackReward = document.getElementById('reward-name-input').value.trim();
+  const playlistReward = document.getElementById('playlist-reward-name').value.trim();
+  const maxPlTracks = parseInt(document.getElementById('max-pl-tracks').value) || 10;
+
+  await set(rewardCfgRef(), {
+    trackReward: trackReward,
+    playlistReward: playlistReward,
+    maxPlTracks: maxPlTracks
+  });
+};
+  
 window.setFallbackMode = async function(mode) {
   fallbackMode = mode;
   updateModeButtons();

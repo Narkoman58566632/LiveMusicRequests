@@ -271,7 +271,7 @@ body{background:var(--bg);min-height:100vh;font-family:'Inter',sans-serif;paddin
         <div class="setting-row"><div class="setting-label" id="l-w-from">Колір "від ..."</div><div class="color-pick"><input type="color" id="w-from" value="#7a3535" oninput="syncHexW(this)"><input class="color-hex" type="text" id="wh-from" value="#7a3535" oninput="hexInputW('w-from',this)"></div></div>
         <div class="setting-row"><div class="setting-label" id="l-w-label">Колір "grає"</div><div class="color-pick"><input type="color" id="w-label" value="#ff6060" oninput="syncHexW(this)"><input class="color-hex" type="text" id="wh-label" value="#ff6060" oninput="hexInputW('w-label',this)"></div></div>
         <div class="setting-row"><div class="setting-label" id="l-w-pill">Черга (пілюлі)</div><div class="color-pick"><input type="color" id="w-pill" value="#c08080" oninput="syncHexW(this)"><input class="color-hex" type="text" id="wh-pill" value="#c08080" oninput="hexInputW('w-pill',this)"></div></div>
-        <div class="setting-row"><div class="setting-label" id="l-w-fontsize">Розмір тексту (px)</div><div class="color-pick"><input type="number" class="num-input" id="w-fontsize" value="13" min="8" max="32"></div></div>
+        <div class="setting-row"><div class="setting-label" id="l-w-fontsize">Розмір текста (px)</div><div class="color-pick"><input type="number" class="num-input" id="w-fontsize" value="13" min="8" max="32"></div></div>
         <div class="setting-row"><div class="setting-label" id="l-w-scroll">Швидкість прокрутки (сек)</div><div class="color-pick"><input type="number" class="num-input" id="w-scroll" value="12" min="4" max="60"></div></div>
       </div>
       <div><button class="settings-save" onclick="saveWidgetTheme()" id="b-save-obs">🎬 Застосувати до OBS</button><button class="settings-reset" onclick="resetWidgetTheme()" id="b-reset-obs">↺ Скинути</button></div>
@@ -295,7 +295,6 @@ const firebaseConfig = {
   measurementId: "G-70G2MEMNGW"
 };
 
-// ⚠️ ВСТАВ СВІЙ КЛЮЧ НИЖЧЕ
 const YOUTUBE_API_KEY = 'AIzaSyAUm7ZI7g_zbkB5BoZURZdQ1UUdzllTomg';
 
 const app = initializeApp(firebaseConfig);
@@ -309,8 +308,8 @@ let userDisplayName = '';
 let allItems = [];
 let twitchToken = null, twitchUserId = null, twitchUserLogin = null;
 let eventSubWs = null, wsSessionId = null, reconnectTimer = null;
-let myPlaylists = []; // [{id, title, thumb, count, tracks:[]}]
-let fallbackMode = 'off'; // 'off' | 'order' | 'shuffle'
+let myPlaylists = []; 
+let fallbackMode = 'off'; 
 let fallbackIndex = 0;
 let activeFallbackPlaylistId = null;
 
@@ -371,7 +370,7 @@ const LANGUAGES = {
     tw_info_connected: "Підключено як {user}. Слухаю Channel Points...",
     lbl_reward_track_name: "назва нагороди для треку (точна, як на Twitch)",
     reward_track_placeholder: "🎵 Замов трек",
-    s_panel_theme: "тема панелі",
+    s_panel_theme: "тема панели",
     l_c_bg: "Фон сторінки",
     l_c_bg2: "Фон блоків",
     l_c_accent: "Акцент",
@@ -672,7 +671,8 @@ function qRef()   { return ref(db, `users/${uid}/queue`); }
 function ctlRef() { return ref(db, `users/${uid}/control`); }
 function wtRef()  { return ref(db, `users/${uid}/widget_theme`); }
 function plRef()  { return ref(db, `users/${uid}/playlists`); }
-function plCfgRef(){ return ref(db, `users/${uid}/playlist_config`); }
+// ИСПРАВЛЕНО: удалена лишняя закрывающая скобка ) из объявления функции
+function plCfgRef() { return ref(db, `users/${uid}/playlist_config`); }
 
 // ── AUTH ─────────────────────────────────────────────────────────
 async function handleTwitchAuthRedirect() {

@@ -528,10 +528,7 @@ function pbRef()       { return ref(db, `users/${uid}/playback_state`); }
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    // If twitch_panel_token exists — signInAnonymously is in progress, wait
-    if (localStorage.getItem('twitch_panel_token')) return;
-    const handled = await handleTwitchAuthRedirect();
-    if (!handled) { window.location.href = './index.html'; }
+   { window.location.href = './index.html'; }
     return;
   }
   uid = user.uid;
@@ -567,17 +564,6 @@ window.doLogout = async function() {
   await signOut(auth);
   window.location.href = './index.html';
 };
-
-async function handleTwitchAuthRedirect() {
-  const hash = window.location.hash;
-  if (!hash.includes('access_token')) return false;
-  const token = new URLSearchParams(hash.replace(/^#/,'')).get('access_token');
-  if (!token) return false;
-  history.replaceState(null,'', window.location.pathname);
-  localStorage.setItem('twitch_panel_token', token);
-  await signInAnonymously(auth);
-  return true;
-}
 
 window.openObsModal = function() {
   const base = window.location.origin + window.location.pathname.replace('panel.html','');

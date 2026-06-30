@@ -26,7 +26,6 @@ body{background:transparent;font-family:'Unbounded',sans-serif;padding:16px;over
 </style>
 </head>
 <body>
-
 <div class="widget hidden" id="widget">
   <div class="top-row">
     <span class="now-label" id="now-label">&#9835; grає</span>
@@ -58,51 +57,30 @@ if (!uid) {
 }
 
 const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
-
-const queueRef   = ref(db, `users/${uid}/queue`);
+const db = getDatabase(app);
+const queueRef = ref(db, `users/${uid}/queue`);
 const controlRef = ref(db, `users/${uid}/control`);
-const themeRef   = ref(db, `users/${uid}/widget_theme`);
-const langRef    = ref(db, `users/${uid}/lang`);
+const themeRef = ref(db, `users/${uid}/widget_theme`);
+const langRef = ref(db, `users/${uid}/lang`);
 
 // ── i18n ──────────────────────────────────────────────────────────
 const STRINGS = {
-  uk: {
-    playing: '♫ grає',
-    from: 'від',
-  },
-  ru: {
-    playing: '♫ играет',
-    from: 'от',
-  },
-  en: {
-    playing: '♫ playing',
-    from: 'by',
-  }
+  uk: { playing: '♫ grає', from: 'від' },
+  ru: { playing: '♫ играет', from: 'от' },
+  en: { playing: '♫ playing', from: 'by' }
 };
-
 let lang = 'uk';
-let currentPlaying = null; // cache to re-render on lang change
-
-function S(key) {
-  return (STRINGS[lang] || STRINGS.uk)[key];
-}
-
+let currentPlaying = null;
+function S(key) { return (STRINGS[lang] || STRINGS.uk)[key]; }
 function applyLang() {
   document.getElementById('now-label').textContent = S('playing');
-  // Re-render from text if something is playing
   if (currentPlaying) {
     document.getElementById('track-from').textContent = S('from') + ' ' + currentPlaying.from;
   }
 }
-
-// Listen for lang changes from panel (saved to Firebase)
 onValue(langRef, (snap) => {
   const val = snap.val();
-  if (val && STRINGS[val]) {
-    lang = val;
-    applyLang();
-  }
+  if (val && STRINGS[val]) { lang = val; applyLang(); }
 });
 
 // ── THEME ─────────────────────────────────────────────────────────
@@ -111,19 +89,18 @@ onValue(themeRef, (snap) => {
   if (!t) return;
   const s = document.documentElement.style;
   const w = document.getElementById('widget');
-  if (t.bg)       { w.style.background = t.bg + 'd9'; }
-  if (t.border)   { w.style.borderColor = t.border; s.setProperty('--w-border', t.border); }
-  if (t.title)    s.setProperty('--w-title', t.title);
-  if (t.from)     s.setProperty('--w-from', t.from);
-  if (t.label)    s.setProperty('--w-label', t.label);
-  if (t.pill)     s.setProperty('--w-pill', t.pill);
+  if (t.bg) { w.style.background = t.bg + 'd9'; }
+  if (t.border) { w.style.borderColor = t.border; s.setProperty('--w-border', t.border); }
+  if (t.title) s.setProperty('--w-title', t.title);
+  if (t.from) s.setProperty('--w-from', t.from);
+  if (t.label) s.setProperty('--w-label', t.label);
+  if (t.pill) s.setProperty('--w-pill', t.pill);
   if (t.fontsize) s.setProperty('--w-fontsize', t.fontsize + 'px');
-  if (t.scroll)   s.setProperty('--w-scroll', t.scroll + 's');
+  if (t.scroll) s.setProperty('--w-scroll', t.scroll + 's');
 });
 
 // ── PLAYER ────────────────────────────────────────────────────────
 let player = null, currentKey = null, hideTimer = null;
-
 const tag = document.createElement('script');
 tag.src = 'https://www.youtube.com/iframe_api';
 document.head.appendChild(tag);
@@ -145,22 +122,32 @@ pd.id = 'yt-player';
 pd.style.cssText = 'position:fixed;bottom:-10px;left:-10px;width:1px;height:1px;';
 document.body.appendChild(pd);
 
+// ── QUEUE (визначено раніше, бо CONTROL залежить від hasPlayableTracks) ──
+let queue = [];
+
+// FIX: чи є хоч один трек що можна грати (approved або playing)
+function hasPlayableTracks() {
+  return queue.some(t => t.status === 'approved' || t.status === 'playing');
+}
+
 // ── CONTROL ───────────────────────────────────────────────────────
 onValue(controlRef, (snap) => {
   const data = snap.val();
   if (!data || !player) return;
-  if (data.action === 'pause')  player.pauseVideo();
-  if (data.action === 'play')   player.playVideo();
-  if (data.action === 'skip')   markDoneAndNext();
+
+  if (data.action === 'pause') { player.pauseVideo(); return; }
+
+  // FIX: play/replay/skip ігноруються якщо черга порожня
+  if (!hasPlayableTracks()) return;
+
+  if (data.action === 'play') player.playVideo();
+  if (data.action === 'skip') markDoneAndNext();
   if (data.action === 'replay') player.seekTo(0);
 });
 
-// ── QUEUE ─────────────────────────────────────────────────────────
-let queue = [];
-
 onValue(queueRef, (snapshot) => {
   const data = snapshot.val();
-  if (!data) { queue = []; updateUI(); return; }
+  if (!data) { queue = []; updateUI(); stopIfEmpty(); return; }
   queue = Object.entries(data)
     .map(([k,v]) => ({...v, key:k}))
     .filter(v => v.status === 'approved' || v.status === 'playing')
@@ -169,8 +156,24 @@ onValue(queueRef, (snapshot) => {
   tryPlay();
 });
 
+// FIX: якщо черга стала порожньою — зупиняємо плеєр і скидаємо стан
+function stopIfEmpty() {
+  if (!player?.stopVideo) return;
+  if (!hasPlayableTracks()) {
+    currentKey = null;
+    try { player.stopVideo(); } catch {}
+  }
+}
+
 function tryPlay() {
   if (!player?.loadVideoById) return;
+
+  // FIX: якщо в черзі взагалі немає треків — нічого не робимо і гарантовано стоп
+  if (!hasPlayableTracks()) {
+    stopIfEmpty();
+    return;
+  }
+
   const playing = queue.find(t => t.status === 'playing');
   if (playing) {
     if (playing.key !== currentKey) {
@@ -179,6 +182,7 @@ function tryPlay() {
     }
     return;
   }
+
   const next = queue.find(t => t.status === 'approved');
   if (next) {
     import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js").then(({ref:dbRef, update}) => {
@@ -212,28 +216,28 @@ function hideWidget() {
 
 function updateUI() {
   const playing = queue.find(t => t.status === 'playing');
-  const rest    = queue.filter(t => t.status === 'approved');
+  const rest = queue.filter(t => t.status === 'approved');
   const titleEl = document.getElementById('track-title');
-  const fromEl  = document.getElementById('track-from');
-  const qRow    = document.getElementById('queue-row');
+  const fromEl = document.getElementById('track-from');
+  const qRow = document.getElementById('queue-row');
 
   if (playing || rest.length > 0) {
     showWidget();
     if (playing) {
       currentPlaying = playing;
       titleEl.textContent = playing.title;
-      fromEl.textContent  = S('from') + ' ' + playing.from;
-      titleEl.className   = playing.title.length > 30 ? 'track-text' : 'track-text short';
+      fromEl.textContent = S('from') + ' ' + playing.from;
+      titleEl.className = playing.title.length > 30 ? 'track-text' : 'track-text short';
     } else {
       currentPlaying = null;
       titleEl.textContent = '';
-      fromEl.textContent  = '';
+      fromEl.textContent = '';
     }
   } else {
     currentPlaying = null;
     hideWidget();
     titleEl.textContent = '';
-    fromEl.textContent  = '';
+    fromEl.textContent = '';
   }
 
   qRow.innerHTML = rest.length > 0

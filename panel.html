@@ -911,10 +911,11 @@ function render(){
 }
 window.reject=k=>remove(ref(db,`users/${uid}/queue/${k}`));
 window.clearAll=()=>{if(!confirm(LANGUAGES[currentLang].confirm_clear))return;allItems.forEach(t=>remove(ref(db,`users/${uid}/queue/${t.key}`)));};
+function hasApprovedTracks(){return allItems.some(t=>t.status==='approved'||t.status==='playing');}
 window.stopCurrentTrack=()=>set(ctlRef(),{action:'pause',ts:Date.now()});
-window.resumeCurrentTrack=()=>set(ctlRef(),{action:'play',ts:Date.now()});
+window.resumeCurrentTrack=()=>{if(!hasApprovedTracks())return;set(ctlRef(),{action:'play',ts:Date.now()});};
 window.skipCurrent=()=>set(ctlRef(),{action:'skip',ts:Date.now()});
-window.replayCurrentTrack=()=>set(ctlRef(),{action:'replay',ts:Date.now()});
+window.replayCurrentTrack=()=>{if(!hasApprovedTracks())return;set(ctlRef(),{action:'replay',ts:Date.now()});};
 window.switchTab=function(name){
   const names=['queue','playlists','twitch','settings'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));

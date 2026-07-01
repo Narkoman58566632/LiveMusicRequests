@@ -3,31 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <title>StreamDJ OBS Widget</title>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Inter:wght@400;500&family=Montserrat:wght@600;800&family=Playfair+Display:wght@700&family=Orbitron:wght@600;800&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:transparent;font-family:'Unbounded',sans-serif;padding:16px;overflow:hidden;}
-:root{--w-bg:rgba(20,0,0,0.85);--w-border:#c0392b;--w-title:#ffffff;--w-from:#7a3535;--w-label:#ff6060;--w-pill:#c08080;--w-fontsize:13px;--w-scroll:12s;}
+:root{
+  --w-bg:rgba(20,0,0,0.85);--w-border:#c0392b;--w-title:#ffffff;--w-from:#7a3535;--w-label:#ff6060;--w-pill:#c08080;
+  --w-fontsize:13px;--w-scroll:12s;--w-radius:12px;--w-blur:4px;--w-font:'Unbounded',sans-serif;--w-shadow:none;
+}
 @keyframes scroll{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.6;}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
-.widget{background:var(--w-bg);border:1px solid var(--w-border);border-radius:12px;padding:10px 16px;min-width:320px;max-width:480px;backdrop-filter:blur(4px);transition:opacity 0.5s ease,transform 0.5s ease;}
+.widget{background:var(--w-bg);border:1px solid var(--w-border);border-radius:var(--w-radius);padding:10px 16px;min-width:320px;max-width:480px;backdrop-filter:blur(var(--w-blur));box-shadow:var(--w-shadow);transition:opacity 0.5s ease,transform 0.5s ease;font-family:var(--w-font);position:relative;}
 .widget.hidden{opacity:0;transform:translateY(8px);pointer-events:none;}
 .widget.visible{opacity:1;transform:translateY(0);animation:fadeIn 0.5s ease;}
-.top-row{display:flex;align-items:center;gap:10px;overflow:hidden;}
+/* default flow layout */
+.widget.layout-flow .top-row{display:flex;align-items:center;gap:10px;overflow:hidden;}
+.widget.layout-flow .from-text{margin-top:4px;}
+.widget.layout-flow .queue-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+/* custom absolute layout */
+.widget.layout-custom{min-height:120px;}
+.widget.layout-custom .top-row,.widget.layout-custom .from-text,.widget.layout-custom .queue-row{position:absolute;}
+.widget.layout-custom .top-row{display:flex;align-items:center;gap:10px;}
+.widget.layout-custom .queue-row{display:flex;gap:6px;flex-wrap:wrap;max-width:300px;}
+
 .now-label{font-size:9px;color:var(--w-label);text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;animation:pulse 1.5s ease-in-out infinite;}
 .track-scroll{flex:1;overflow:hidden;position:relative;}
-.track-text{font-size:var(--w-fontsize);color:var(--w-title);white-space:nowrap;display:inline-block;animation:scroll var(--w-scroll) linear infinite;}
+.track-text{font-size:var(--w-fontsize);color:var(--w-title);white-space:nowrap;display:inline-block;animation:scroll var(--w-scroll) linear infinite;font-family:var(--w-font);}
 .track-text.short{animation:none;}
-.from-text{font-size:10px;color:var(--w-from);margin-top:4px;}
-.queue-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
-.q-pill{font-size:10px;color:var(--w-pill);background:#2a0808;border:1px solid #3d1010;border-radius:99px;padding:2px 8px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
+.from-text{font-size:10px;color:var(--w-from);}
+.q-pill{font-size:10px;color:var(--w-pill);background:rgba(255,255,255,0.06);border:1px solid var(--w-border);border-radius:99px;padding:2px 8px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
 .error{color:#ff6060;font-size:12px;font-family:'Unbounded',sans-serif;padding:16px;}
 </style>
 </head>
 <body>
-<div class="widget hidden" id="widget">
-  <div class="top-row">
+
+<div class="widget hidden layout-flow" id="widget">
+  <div class="top-row" id="top-row">
     <span class="now-label" id="now-label">&#9835; grає</span>
     <div class="track-scroll"><span class="track-text short" id="track-title"></span></div>
   </div>
@@ -74,29 +86,65 @@ let currentPlaying = null;
 function S(key) { return (STRINGS[lang] || STRINGS.uk)[key]; }
 function applyLang() {
   document.getElementById('now-label').textContent = S('playing');
-  if (currentPlaying) {
-    document.getElementById('track-from').textContent = S('from') + ' ' + currentPlaying.from;
-  }
+  if (currentPlaying) document.getElementById('track-from').textContent = S('from') + ' ' + currentPlaying.from;
 }
 onValue(langRef, (snap) => {
   const val = snap.val();
   if (val && STRINGS[val]) { lang = val; applyLang(); }
 });
 
-// ── THEME ─────────────────────────────────────────────────────────
+// ── THEME (colors, shape, typography, custom layout positions) ────
+const FONT_MAP = {
+  'Unbounded':"'Unbounded',sans-serif", 'Inter':"'Inter',sans-serif", 'Montserrat':"'Montserrat',sans-serif",
+  'Playfair Display':"'Playfair Display',serif", 'Orbitron':"'Orbitron',sans-serif", 'Bebas Neue':"'Bebas Neue',sans-serif"
+};
+
+function hexToRgba(hex, alphaPct) {
+  if (!hex) return null;
+  const h = hex.replace('#','');
+  if (h.length !== 6) return hex;
+  const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${(alphaPct/100).toFixed(2)})`;
+}
+
 onValue(themeRef, (snap) => {
   const t = snap.val();
   if (!t) return;
   const s = document.documentElement.style;
   const w = document.getElementById('widget');
-  if (t.bg) { w.style.background = t.bg + 'd9'; }
-  if (t.border) { w.style.borderColor = t.border; s.setProperty('--w-border', t.border); }
+
+  if (t.bg) s.setProperty('--w-bg', t.opacity !== undefined ? hexToRgba(t.bg, t.opacity) : (t.bg + 'd9'));
+  if (t.border) s.setProperty('--w-border', t.border);
   if (t.title) s.setProperty('--w-title', t.title);
   if (t.from) s.setProperty('--w-from', t.from);
   if (t.label) s.setProperty('--w-label', t.label);
   if (t.pill) s.setProperty('--w-pill', t.pill);
   if (t.fontsize) s.setProperty('--w-fontsize', t.fontsize + 'px');
   if (t.scroll) s.setProperty('--w-scroll', t.scroll + 's');
+  s.setProperty('--w-radius', (t.radius !== undefined ? t.radius : 12) + 'px');
+  s.setProperty('--w-blur', (t.blur !== undefined ? t.blur : 4) + 'px');
+  s.setProperty('--w-shadow', t.shadow ? '0 8px 30px rgba(0,0,0,.5)' : 'none');
+  s.setProperty('--w-font', FONT_MAP[t.fontFamily] || FONT_MAP['Unbounded']);
+
+  // Custom drag&drop layout from the constructor page
+  const topRow = document.getElementById('top-row');
+  const fromText = document.getElementById('track-from');
+  const queueRow = document.getElementById('queue-row');
+  if (t.layout) {
+    w.classList.remove('layout-flow');
+    w.classList.add('layout-custom');
+    if (t.layout.now || t.layout.title) {
+      // now-label and title share the top-row container; position it at the "now" spot
+      const p = t.layout.now || t.layout.title;
+      topRow.style.left = p.x + '%'; topRow.style.top = p.y + '%';
+    }
+    if (t.layout.from) { fromText.style.left = t.layout.from.x + '%'; fromText.style.top = t.layout.from.y + '%'; }
+    if (t.layout.queue) { queueRow.style.left = t.layout.queue.x + '%'; queueRow.style.top = t.layout.queue.y + '%'; }
+  } else {
+    w.classList.remove('layout-custom');
+    w.classList.add('layout-flow');
+    [topRow, fromText, queueRow].forEach(el => { el.style.left = ''; el.style.top = ''; });
+  }
 });
 
 // ── PLAYER ────────────────────────────────────────────────────────
@@ -109,45 +157,29 @@ window.onYouTubeIframeAPIReady = function() {
   player = new YT.Player('yt-player', {
     height:'1', width:'1',
     playerVars:{autoplay:1},
-    events:{
-      onStateChange(e){
-        if (e.data === YT.PlayerState.ENDED) markDoneAndNext();
-      }
-    }
+    events:{ onStateChange(e){ if (e.data === YT.PlayerState.ENDED) markDoneAndNext(); } }
   });
 };
-
 const pd = document.createElement('div');
 pd.id = 'yt-player';
 pd.style.cssText = 'position:fixed;bottom:-10px;left:-10px;width:1px;height:1px;';
 document.body.appendChild(pd);
 
-// ── QUEUE (визначено раніше, бо CONTROL залежить від hasPlayableTracks) ──
-let queue = [];
-
-// FIX: чи є хоч один трек що можна грати (approved або playing)
-function hasPlayableTracks() {
-  return queue.some(t => t.status === 'approved' || t.status === 'playing');
-}
-
 // ── CONTROL ───────────────────────────────────────────────────────
 onValue(controlRef, (snap) => {
   const data = snap.val();
   if (!data || !player) return;
-
-  if (data.action === 'pause') { player.pauseVideo(); return; }
-
-  // FIX: play/replay/skip ігноруються якщо черга порожня
-  if (!hasPlayableTracks()) return;
-
+  if (data.action === 'pause') player.pauseVideo();
   if (data.action === 'play') player.playVideo();
   if (data.action === 'skip') markDoneAndNext();
   if (data.action === 'replay') player.seekTo(0);
 });
 
+// ── QUEUE ─────────────────────────────────────────────────────────
+let queue = [];
 onValue(queueRef, (snapshot) => {
   const data = snapshot.val();
-  if (!data) { queue = []; updateUI(); stopIfEmpty(); return; }
+  if (!data) { queue = []; updateUI(); return; }
   queue = Object.entries(data)
     .map(([k,v]) => ({...v, key:k}))
     .filter(v => v.status === 'approved' || v.status === 'playing')
@@ -156,33 +188,13 @@ onValue(queueRef, (snapshot) => {
   tryPlay();
 });
 
-// FIX: якщо черга стала порожньою — зупиняємо плеєр і скидаємо стан
-function stopIfEmpty() {
-  if (!player?.stopVideo) return;
-  if (!hasPlayableTracks()) {
-    currentKey = null;
-    try { player.stopVideo(); } catch {}
-  }
-}
-
 function tryPlay() {
   if (!player?.loadVideoById) return;
-
-  // FIX: якщо в черзі взагалі немає треків — нічого не робимо і гарантовано стоп
-  if (!hasPlayableTracks()) {
-    stopIfEmpty();
-    return;
-  }
-
   const playing = queue.find(t => t.status === 'playing');
   if (playing) {
-    if (playing.key !== currentKey) {
-      currentKey = playing.key;
-      player.loadVideoById(playing.id);
-    }
+    if (playing.key !== currentKey) { currentKey = playing.key; player.loadVideoById(playing.id); }
     return;
   }
-
   const next = queue.find(t => t.status === 'approved');
   if (next) {
     import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js").then(({ref:dbRef, update}) => {
